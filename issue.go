@@ -1426,6 +1426,28 @@ func (s *IssueService) AddWatcher(issueID string, userName string) (*Response, e
 	return s.AddWatcherWithContext(context.Background(), issueID, userName)
 }
 
+// AddWatcher3WithContext adds watcher to the given issue
+func (s *IssueService) AddWatcher3WithContext(ctx context.Context, issueID string, accountID string) (*Response, error) {
+	apiEndPoint := fmt.Sprintf("rest/api/3/issue/%s/watchers", issueID)
+
+	req, err := s.client.NewRequestWithContext(ctx, "POST", apiEndPoint, accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.Do(req, nil)
+	if err != nil {
+		err = NewJiraError(resp, err)
+	}
+
+	return resp, err
+}
+
+// AddWatcher3 wraps AddWatcher3WithContext using the background context.
+func (s *IssueService) AddWatcher3(issueID string, accountID string) (*Response, error) {
+	return s.AddWatcherWithContext(context.Background(), issueID, accountID)
+}
+
 // RemoveWatcherWithContext removes given user from given issue
 //
 // Jira API docs: https://docs.atlassian.com/software/jira/docs/api/REST/latest/#api/2/issue-removeWatcher
