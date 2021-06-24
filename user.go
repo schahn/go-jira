@@ -266,3 +266,42 @@ func (s *UserService) FindWithContext(ctx context.Context, property string, twea
 func (s *UserService) Find(property string, tweaks ...userSearchF) ([]User, *Response, error) {
 	return s.FindWithContext(context.Background(), property, tweaks...)
 }
+
+// FindWithContext searches for user info from Jira:
+// It can find users by email or display name using the query parameter
+//
+// Jira API docs: https://developer.atlassian.com/cloud/jira/platform/rest/v2/#api-rest-api-2-user-search-get
+func (s *UserService) Find3WithContext(ctx context.Context, property string, tweaks ...userSearchF) ([]User, *Response, error) {
+	search := []userSearchParam{
+		{
+			name:  "query",
+			value: property,
+		},
+	}
+	for _, f := range tweaks {
+		search = f(search)
+	}
+
+	var queryString = ""
+	for _, param := range search {
+		queryString += param.name + "=" + param.value + "&"
+	}
+
+	apiEndpoint := fmt.Sprintf("/rest/api/3/user/search?%s", queryString[:len(queryString)-1])
+	req, err := s.client.NewRequestWithContext(ctx, "GET", apiEndpoint, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	users := []User{}
+	resp, err := s.client.Do(req, &users)
+	if err != nil {
+		return nil, resp, NewJiraError(resp, err)
+	}
+	return users, resp, nil
+}
+
+// Find wraps FindWithContext using the background context.
+func (s *UserService) Find3(property string, tweaks ...userSearchF) ([]User, *Response, error) {
+	return s.Find3WithContext(context.Background(), property, tweaks...)
+}
